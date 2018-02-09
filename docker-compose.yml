@@ -1,0 +1,13 @@
+
+version: "3"
+
+services:
+  ingestion:
+    build: ./ingestion
+    ports:
+      - "80:80"
+      # - "443:443"
+  redis:
+    image: redis:alpine
+  delivery:
+    build: ./delivery

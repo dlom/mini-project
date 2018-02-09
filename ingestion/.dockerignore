@@ -1,0 +1,4 @@
+vendor/
+.gitignore
+Dockerfile
+.dockerignore
