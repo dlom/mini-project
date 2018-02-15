@@ -7,7 +7,14 @@ services:
     ports:
       - "80:80"
       # - "443:443"
+    env_file: common.env
+    depends_on:
+      - redis
   redis:
     image: redis:alpine
   delivery:
     build: ./delivery
+    env_file: common.env
+    depends_on:
+      - redis
+    restart: on-failure
