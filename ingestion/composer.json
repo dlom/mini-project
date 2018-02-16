@@ -1,5 +1,6 @@
 {
     "require": {
-        "predis/predis": "1.1.*"
+        "predis/predis": "^1.1",
+        "justinrainbow/json-schema": "^5.2"
     }
 }
