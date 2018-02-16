@@ -5,7 +5,7 @@ require_once "vendor/autoload.php";
 header("Content-Type: text/plain");
 
 $redisHost = getenv("REDIS_URL") ?: "redis://localhost:6379";
-$queueName = "queue:postback";
+$queueName = getenv("REDIS_QUEUE") ?: "queue:postback";
 
 $body = file_get_contents('php://input');
 $json = json_decode($body);
