@@ -39,7 +39,6 @@ func main() {
 	c, err := redis.DialURL(redisHost)
 	if err != nil {
 		logger.Error("Failed to connect to redis", zap.Error(err))
-		logger.Error("Retrying... (probably")
 		logger.Sync()
 		os.Exit(1)
 	}
@@ -113,9 +112,10 @@ func processPostback(p postback, defaultReplacementValue string, logger *zap.Log
 			}
 
 			logger.Info("Request sent",
-				zap.Int("Response code", response.StatusCode),
-				zap.Duration("Response time", elapsed),
-				zap.ByteString("Response body", body))
+				zap.Time("deliveryTime", start),
+				zap.Int("responseCode", response.StatusCode),
+				zap.Duration("responseTime", elapsed),
+				zap.ByteString("responseBody", body))
 		}(values)
 	}
 	return nil

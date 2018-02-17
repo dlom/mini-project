@@ -9,11 +9,13 @@ services:
     env_file: common.env
     depends_on:
       - redis
+    restart: always
   redis:
     image: redis:alpine
+    restart: always
   delivery:
     build: ./delivery
     env_file: common.env
     depends_on:
       - redis
-    restart: on-failure
+    restart: always

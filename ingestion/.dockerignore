@@ -1,4 +1,4 @@
-vendor/
-.gitignore
 Dockerfile
 .dockerignore
+.gitignore
+vendor/
