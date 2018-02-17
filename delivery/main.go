@@ -2,13 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/garyburd/redigo/redis"
+	"go.uber.org/zap"
 )
 
 type postback struct {
@@ -30,21 +32,24 @@ func main() {
 	}
 	defaultReplacementValue := os.Getenv("DEFAULT_REPLACEMENT_VALUE")
 
-	fmt.Println("Attempting to connect to redis...")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+
+	logger.Info("Attempting to connect to redis...")
 	c, err := redis.DialURL(redisHost)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		fmt.Fprintln(os.Stderr, "Failed to connect to redis!")
-		fmt.Fprintln(os.Stderr, "Retrying... (probably)")
+		logger.Error("Failed to connect to redis", zap.Error(err))
+		logger.Error("Retrying... (probably")
+		logger.Sync()
 		os.Exit(1)
 	}
-	fmt.Println("Connected!")
+	logger.Info("Connected!")
 	defer c.Close()
 
 	for {
-		err := handlePostback(c, queueName, defaultReplacementValue)
+		err := handlePostback(c, queueName, defaultReplacementValue, logger)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
+			logger.Error("Failed to handle postback", zap.Error(err))
 		}
 	}
 }
@@ -52,12 +57,12 @@ func main() {
 // handlePostback blocks until an item is available in the redis queue.
 // After an item is available in the queue, it is popped off and immediately
 // processed.
-func handlePostback(c redis.Conn, queueName string, defaultReplacementValue string) error {
+func handlePostback(c redis.Conn, queueName string, defaultReplacementValue string, logger *zap.Logger) error {
 	p, err := getPostback(c, queueName)
 	if err != nil {
 		return err
 	}
-	return processPostback(p, defaultReplacementValue)
+	return processPostback(p, defaultReplacementValue, logger)
 }
 
 // getPostback blocks until an item is available in the redis queue.
@@ -76,11 +81,12 @@ func getPostback(c redis.Conn, queueName string) (postback, error) {
 // getPostback takes a raw postback data structure and performs the necessary
 // processing to prepare the postback for http requests.  Afterwards, it
 // kicks off those http requests.
-func processPostback(p postback, defaultReplacementValue string) error {
+func processPostback(p postback, defaultReplacementValue string, logger *zap.Logger) error {
 	valueSet, err := convertPostbackToValues(p, defaultReplacementValue)
 	if err != nil {
 		return err
 	}
+
 	parsedURL, err := url.Parse(p.Endpoint.URL)
 	if err != nil {
 		return err
@@ -89,7 +95,28 @@ func processPostback(p postback, defaultReplacementValue string) error {
 	URL := parsedURL.String()
 
 	for _, values := range valueSet {
-		performRequest(p.Endpoint.Method, URL, values)
+		go func(values url.Values) {
+			start := time.Now()
+			response, err := performRequest(p.Endpoint.Method, URL, values)
+			elapsed := time.Since(start)
+
+			if err != nil {
+				logger.Error("Failed to send request", zap.Error(err))
+				return
+			}
+
+			defer response.Body.Close()
+			body, err := ioutil.ReadAll(response.Body)
+			if err != nil {
+				logger.Error("Failed to read response body", zap.Error(err))
+				return
+			}
+
+			logger.Info("Request sent",
+				zap.Int("Response code", response.StatusCode),
+				zap.Duration("Response time", elapsed),
+				zap.ByteString("Response body", body))
+		}(values)
 	}
 	return nil
 }
@@ -141,7 +168,6 @@ func convertPostbackToValues(p postback, defaultValue string) ([]url.Values, err
 func performRequest(method string, URL string, values url.Values) (*http.Response, error) {
 	var response *http.Response
 	var err error
-	fmt.Printf("%s %s\n", method, URL)
 	switch method {
 	case "GET":
 		response, err = http.Get(URL + "?" + values.Encode())
