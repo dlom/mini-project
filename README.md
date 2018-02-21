@@ -1,7 +1,9 @@
 Kochava Mini Project
 ====================
 
-To run: `docker-compose up -d`
+To run: `docker-compose up -d [--build]`
+
+To run the testing script: `node tester/test.js`
 
 ## Rationales
 
