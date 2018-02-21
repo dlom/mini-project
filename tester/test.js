@@ -14,6 +14,10 @@ const valueGenerators = [
 	faker.phone.phoneNumber
 ];
 
+const randomValue = () => {
+	return faker.random.arrayElement(valueGenerators)();
+};
+
 const createBin = async () => {
 	const response = await got("http://postb.in/api/bin", {
 		method: "POST"
@@ -21,17 +25,34 @@ const createBin = async () => {
 	return JSON.parse(response.body).binId;
 };
 
+const generateUniqueWords = length => {
+	const words = faker.lorem.words(length).split(" ");
+	// Strip out duplicate words
+	const uniqueWords = [...new Set(words)];
+	if (uniqueWords.length !== length) {
+		return generateUniqueWords(length);
+	}
+	return uniqueWords;
+};
+
 const generateBody = binId => {
 	const method = faker.random.arrayElement(["GET", "POST"]);
 
 	const propertyCount = faker.random.number({ min: 2, max: 4 });
-	const keys = faker.lorem.words(propertyCount).split(" ");
-	const names = faker.lorem.words(propertyCount).split(" ");
+	const keys = generateUniqueWords(propertyCount);
+	const names = generateUniqueWords(propertyCount);
 
 	const query = keys.reduce((accumulator, key, i) => {
 		accumulator[key] = `{${names[i]}}`;
 		return accumulator;
 	}, {});
+	if (faker.random.number({ min: 1, max: 3 }) === 1) {
+		let staticKey = faker.lorem.word();
+		while (keys.indexOf(staticKey) >= 0) {
+			staticKey = faker.lorem.word();
+		}
+		query[staticKey] = qs.escape(randomValue());
+	}
 	const querystring = qs.unescape(qs.stringify(query));
 	const url = `http://postb.in/${binId}?${querystring}`;
 
@@ -42,7 +63,7 @@ const generateBody = binId => {
 		const d = {};
 		names.forEach(name => {
 			if (faker.random.number({ min: 0, max: 5 }) !== 0) {
-				d[name] = faker.random.arrayElement(valueGenerators)();
+				d[name] = randomValue();
 			}
 		});
 		return d;

@@ -140,23 +140,34 @@ func convertPostbackToValues(p postback, defaultValue string) ([]url.Values, err
 
 	// Extract all key tokens from querystring
 	regex := regexp.MustCompile("{(.*?)}")
-	keyMap := make(map[string]string)
+	replaceKeys := make(map[string]string)
+	plainKeys := make(map[string]string)
 	for key, value := range queryValues {
 		// Assume that all queryValues are unique
-		keyMap[key] = regex.FindStringSubmatch(value[0])[1]
+		regexResult := regex.FindStringSubmatch(value[0])
+		// Test if this is a key that needs replacing
+		if len(regexResult) == 2 {
+			replaceKeys[key] = regexResult[1]
+		} else {
+			plainKeys[key] = value[0]
+		}
 	}
 
 	// Loop through data structs and marry the key tokens with the values
 	// from the data structs
 	for index, data := range p.Data {
 		results[index] = make(url.Values)
-		for key, replace := range keyMap {
+		for key, replace := range replaceKeys {
 			// Test if the `replace` key exists exists in the data map
 			if value, ok := data[replace]; ok {
 				results[index].Set(key, value)
 			} else {
 				results[index].Set(key, defaultValue)
 			}
+		}
+		// Add back on the key/value pairs that didn't need any replacement
+		for key, value := range plainKeys {
+			results[index].Set(key, value)
 		}
 	}
 
