@@ -1,6 +1,6 @@
 <?php
 
-require_once "vendor/autoload.php";
+require_once "../vendor/autoload.php";
 
 header("Content-Type: text/plain");
 
@@ -35,7 +35,7 @@ if ($json === NULL) {
 // Perform simple validation on the JSON
 $validator = new JsonSchema\Validator();
 $validator->validate($json, [
-    '$ref' => "file://" . realpath("schema.json")
+    '$ref' => "file://" . realpath("../schema.json")
 ]);
 if (!$validator->isValid()) {
     http_response_code(422);
