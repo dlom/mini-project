@@ -13,12 +13,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type endpoint struct {
+	Method string `json:"method"`
+	URL    string `json:"url"`
+}
+
 type postback struct {
-	Endpoint struct {
-		Method string
-		URL    string
-	}
-	Data []map[string]string
+	Endpoint endpoint            `json:"endpoint"`
+	Data     []map[string]string `json:"data"`
 }
 
 // createLogger instantiates a new instance of a zap logger,
