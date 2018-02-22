@@ -8,14 +8,14 @@ docker-compose up -d [--build]
 
 ## To run the testing script
 ```
-node tester/test.js
+node tester
 ```
 
 ## Scaling up
 
 If a single instance of the ingestion service cannot properly handle the load, it can be easily scaled using `docker-compose`:
 ```
-docker-compose up -d --scale ingestion=3
+docker-compose up -d --scale ingestion=10
 ```
 This usually manifests itself in `500: Internal Server Error` responses.
 

@@ -3,8 +3,6 @@ const qs = require("querystring");
 const got = require("got");
 const faker = require("faker");
 
-const REQUESTS_TO_PERFORM = 1000;
-
 const valueGenerators = [
 	faker.random.word,
 	faker.internet.url,
@@ -72,8 +70,8 @@ const generateBody = binId => {
 	return { endpoint, data };
 };
 
-const createRequest = body => {
-	return got("http://localhost/ingest.php", {
+const createRequest = (body, endpoint) => {
+	return got(endpoint, {
 		method: "POST",
 		headers: {
 			"Content-Type": "application/json"
@@ -82,26 +80,8 @@ const createRequest = body => {
 	});
 };
 
-const performALotOfRequests = (binId, count) => {
-	const promises = Array.from(new Array(count), () => {
-		return JSON.stringify(generateBody(binId));
-	}).map(body => {
-		return createRequest(body);
-	});
-	return Promise.all(promises);
+module.exports = {
+	generateBody,
+	createRequest,
+	createBin
 };
-
-(async () => {
-	try {
-		const binId = await createBin();
-		console.log(`http://postb.in/b/${binId}`);
-		const results = await performALotOfRequests(binId, REQUESTS_TO_PERFORM);
-		if (results.length <= 20) {
-			results.forEach(result => {
-				console.log(`${result.statusCode}: ${result.statusMessage}`);
-			});
-		}
-	} catch (e) {
-		console.error(e);
-	}
-})();

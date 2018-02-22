@@ -21,6 +21,16 @@ type postback struct {
 	Data []map[string]string
 }
 
+// createLogger instantiates a new instance of a zap logger,
+// configured (at the moment) to disable sampling.
+func createLogger() *zap.Logger {
+	config := zap.NewProductionConfig()
+	// Disable log sampling (temporarily?)
+	config.Sampling = nil
+	logger, _ := config.Build()
+	return logger
+}
+
 func main() {
 	redisHost := os.Getenv("REDIS_URL")
 	if redisHost == "" {
@@ -32,7 +42,7 @@ func main() {
 	}
 	defaultReplacementValue := os.Getenv("DEFAULT_REPLACEMENT_VALUE")
 
-	logger, _ := zap.NewProduction()
+	logger := createLogger()
 	defer logger.Sync()
 
 	logger.Info("Attempting to connect to redis...")
