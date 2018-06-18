@@ -1,5 +1,5 @@
-Kochava Mini Project
-====================
+Mini Project
+============
 
 ## To run
 ```
